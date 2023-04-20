@@ -389,8 +389,94 @@ FROM recipe_for_pizza
 GROUP BY pizza_name;
 
 -- What was the most commonly added extra?
-SELECT topping_name, COUNT 
+CREATE TEMPORARY TABLE tmp_extras (
+  order_id INT,
+  extras VARCHAR(4)
+);
+
+INSERT INTO tmp_extras (order_id, extras)
+SELECT order_id, SUBSTRING_INDEX(SUBSTRING_INDEX(extras, ',',n),',',-1) AS extras
+FROM customer_orders_temp
+JOIN (
+SELECT 1 AS n
+UNION ALL SELECT 2
+UNION ALL SELECT 3
+) AS numbers ON CHAR_LENGTH(extras) - CHAR_LENGTH(REPLACE(extras, ',','')) >= n-1
+WHERE extras !='';
+
+SELECT t.topping_name, COUNT(extras)
+FROM pizza_toppings t
+JOIN tmp_extras tmp
+  ON t.topping_id = tmp.extras
+GROUP BY topping_name
+LIMIT 1;
+
 -- What was the most common exclusion?
+---This doesn't give the right answer. BUT FIND_IN_SET return the position of a string within a list of string.
+SELECT c.order_id, c.exclusions, t.topping_name
+FROM customer_orders_temp c
+JOIN pizza_toppings t
+  ON FIND_IN_SET(t.topping_id,c.exclusions)
+ORDER BY c.order_id;
+
+--this approach requires you to manually specify the maximum number of values that can appear in the exclusions column
+-- and add a UNION ALL statement for each possible value.
+--- This gives quite ok resul, but the string operation is expensive because the use of SUBSTRING_INDEX and REPLACE.
+--- This make it a less efficient and scalable solution for querying your data, especially if you have a large dataset.
+With exclusions_temp AS 
+(
+SELECT order_id, SUBSTRING_INDEX(SUBSTRING_INDEX(exclusions, ',', n), ',', -1) AS exclusions
+FROM customer_orders_temp
+JOIN (
+    SELECT 1 AS n
+    UNION ALL SELECT 2
+    UNION ALL SELECT 3
+    -- Add more UNION ALL statements for each possible value in the exclusions column
+) AS numbers ON CHAR_LENGTH(exclusions) - CHAR_LENGTH(REPLACE(exclusions, ',', '')) >= n - 1
+WHERE exclusions != ''
+)
+SELECT t.topping_name, COUNT(exclusions)
+FROM pizza_toppings t
+JOIN exclusions_temp e
+  ON t.topping_id = e.exclusions
+GROUP BY t.topping_name;
+
+---Update the customer_orders_temp
+CREATE TEMPORARY TABLE tmp_exclusions (
+   order_id INT,
+   exclusions VARCHAR(4)
+);
+
+---the exclusions column contains a comma-separated list of values, 
+--we need to join with all possible values of n that correspond to an index of a comma in the exclusions string. Therefore, number of commas have be >= n-1
+--Explain: comma + 1 = length of the string. Therefore, in order to extract all from the string, it must be n + 1. 
+--For example, string 1,2 has one comma, if we only use n = 1, it only gives the result of 1 but n=2 2 gives the result of 1,2
+INSERT INTO tmp_exclusions (order_id, exclusions)
+SELECT order_id, SUBSTRING_INDEX(SUBSTRING_INDEX(exclusions, ',', n), ',', -1) AS exclusions
+FROM customer_orders_temp
+JOIN (
+    SELECT 1 AS n
+    UNION ALL SELECT 2
+    UNION ALL SELECT 3
+    -- Add more UNION ALL statements for each possible value in the exclusions column
+) AS numbers ON CHAR_LENGTH(exclusions) - CHAR_LENGTH(REPLACE(exclusions, ',', '')) >= n - 1
+WHERE exclusions != ''
+;
+
+--Checking--
+DROP TEMPORARY TABLE tmp_exclusions;
+SELECT * FROM tmp_exclusions;
+
+---Remove LIMIT 1 to see if there are more than 1 highest values.
+-- COUNT(*) can be used in ORDER BY
+SELECT t.topping_name, COUNT(exclusions) AS exclusions_count
+FROM pizza_toppings t
+JOIN tmp_exclusions tmp
+  ON t.topping_id = tmp.exclusions
+GROUP BY t.topping_name
+ORDER BY COUNT(*) DESC
+LIMIT 1;
+
 -- Generate an order item for each record in the customers_orders table in the format of one of the following:
 -- Meat Lovers
 -- Meat Lovers - Exclude Beef
