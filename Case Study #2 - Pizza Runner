@@ -484,4 +484,425 @@ LIMIT 1;
 -- Meat Lovers - Exclude Cheese, Bacon - Extra Mushroom, Peppers
 -- Generate an alphabetically ordered comma separated ingredient list for each pizza order from the customer_orders table and add a 2x in front of any relevant ingredients
 -- For example: "Meat Lovers: 2xBacon, Beef, ... , Salami"
+SELECT * FROM customer_orders_temp;
+
+CREATE TEMPORARY TABLE extras_exclusions
+SELECT *, 
+		substring_index(exclusions, ',', 1) AS exclusions_1,
+		CASE 
+			WHEN exclusions REGEXP ',' THEN substring_index(exclusions, ',', -1) 
+			END AS exclusions_2,
+		substring_index(extras, ',', 1) AS extras_1,
+		CASE 
+			WHEN extras REGEXP ',' THEN substring_index(extras, ',', -1) 
+			END AS extras_2
+FROM customer_orders_temp;
+
+DROP TEMPORARY TABLE extras_exclusions;
+SELECT order_id, exclusions_1, exclusions_2, extras_1, extras_2 FROM extras_exclusions;
+
+INSERT INTO extras_exclusions (order_id, pizza_id, exclusions_1, exclusions_2, extras_1, extras_2)
+VALUES 
+(20,1,'','',2,3),
+(21,1,1,2,'',''),
+(22,1,2,3,4,''),
+(23,1,4,'',3,2)
+;
+
+--This CASE WHEN give a more scalable solution
+CREATE TEMPORARY TABLE order_items_temp
+SELECT c.order_id, c.pizza_id, n.pizza_name, a.topping_name AS exclusions_1, b.topping_name AS exclusions_2, d.topping_name AS extras_1, e.topping_name AS extras_2
+FROM extras_exclusions c
+JOIN pizza_names n ON n.pizza_id = c.pizza_id
+LEFT JOIN pizza_toppings a ON a.topping_id = c.exclusions_1 
+LEFT JOIN pizza_toppings b ON b.topping_id = c.exclusions_2
+LEFT JOIN pizza_toppings d ON d.topping_id = c.extras_1
+LEFT JOIN pizza_toppings e ON e.topping_id = c.extras_2;
+
+SELECT order_id,
+CASE 
+		WHEN COALESCE(exclusions_1, exclusions_2, extras_1, extras_2) IS NULL THEN pizza_name
+    WHEN COALESCE(exclusions_1, exclusions_2, extras_2) IS NULL 
+      THEN CONCAT(pizza_name, ' - Extra ', extras_1)
+    WHEN COALESCE(exclusions_2, extras_1, extras_2) IS NULL
+      THEN CONCAT(pizza_name, ' - Exclude ', exclusions_1)
+    WHEN COALESCE (exclusions_1, exclusions_2) IS NULL 
+      THEN CONCAT(pizza_name, ' - Extra ', extras_1, ', ', extras_2)
+    WHEN extras_1 IS NULL AND extras_2 IS NULL
+      THEN CONCAT(pizza_name, ' - Exclude ', exclusions_1, ', ', exclusions_2)
+    WHEN extras_2 IS NULL 
+      THEN CONCAT(pizza_name, ' - Exclude ', exclusions_1, ', ', exclusions_2, ' - Extra ', extras_1)
+    WHEN exclusions_2 IS NULL 
+      THEN CONCAT(pizza_name,' - Exclude ', exclusions_1, ' - Extra ', extras_1, ', ', extras_2) 
+    WHEN COALESCE(exclusions_1, exclusions_2, extras_1, extras_2) IS NOT NULL 
+      THEN CONCAT_WS("", pizza_name, ' - Extra ', extras_1, ', ', extras_2,
+					   ' - Exclude ', exclusions_1,', ', exclusions_2)
+    END AS order_item
+FROM order_items_temp;
+
+
+SELECT *, ROW_NUMBER() OVER () AS ranks
+FROM customer_orders_temp;
+
+WITH s AS
+(
+SELECT *, ROW_NUMBER() OVER () AS ranks
+FROM customer_orders_temp
+)
+SELECT ranks, order_id, pizza_id, 
+SUBSTRING_INDEX(SUBSTRING_INDEX(exclusions, ',', n), ',', -1) AS exclusions,
+SUBSTRING_INDEX(SUBSTRING_INDEX(extras, ',',m),',',-1) AS extras
+FROM s
+JOIN (
+    SELECT 1 AS n
+    UNION ALL SELECT 2
+    UNION ALL SELECT 3
+    -- Add more UNION ALL statements for each possible value in the exclusions column
+) AS numbers1 ON CHAR_LENGTH(exclusions) - CHAR_LENGTH(REPLACE(exclusions, ',', '')) >= n - 1 
+JOIN (
+SELECT 1 AS m
+UNION ALL SELECT 2
+UNION ALL SELECT 3
+) AS numbers2 ON CHAR_LENGTH(extras) - CHAR_LENGTH(REPLACE(extras, ',','')) >= m-1;
+
+
+
+
+
+    WITH s AS (
+      SELECT
+        *,
+        ROW_NUMBER() OVER () AS ranks
+      FROM
+        customer_orders_temp
+    )
+    SELECT
+      ranks,
+      order_id,
+      pizza_id,
+      SUBSTRING_INDEX(SUBSTRING_INDEX(exclusions, ',', n), ',', -1) AS exclusions,
+      SUBSTRING_INDEX(SUBSTRING_INDEX(extras, ',', m), ',', -1) AS extras
+    FROM
+      s
+      JOIN (
+        SELECT 1 AS n UNION ALL SELECT 2 UNION ALL SELECT 3
+      ) AS numbers1 ON CHAR_LENGTH(exclusions) - CHAR_LENGTH(REPLACE(exclusions, ',', '')) >= n - 1
+      JOIN (
+        SELECT 1 AS m UNION ALL SELECT 2 UNION ALL SELECT 3
+      ) AS numbers2 ON CHAR_LENGTH(extras) - CHAR_LENGTH(REPLACE(extras, ',', '')) >= m - 1
+  ) AS topping_table;
+
+
+  JOIN pizza_names ON pizza_names.pizza_id = topping_table.pizza_id;
+
+
+
+
+SELECT * FROM
+(
+    WITH s AS
+    (
+        SELECT *, ROW_NUMBER() OVER () AS ranks
+        FROM customer_orders_temp
+    )
+    SELECT ranks, order_id, pizza_names.pizza_name, 
+    CASE
+        WHEN exclusions != 'null'
+        AND topping_id IN (
+          SELECT
+            SUBSTRING_INDEX(SUBSTRING_INDEX(exclusions, ',', n), ',', -1) AS exclusions
+        ) THEN topping_name END AS exclusions,
+     CASE   
+        WHEN extras != 'null'
+        AND topping_id IN (
+          SELECT
+        SUBSTRING_INDEX(SUBSTRING_INDEX(extras, ',',m),',',-1) AS extras
+        ) THEN topping_name END AS extras
+    FROM pizza_toppings, s
+    JOIN (
+        SELECT 1 AS n
+        UNION ALL SELECT 2
+        UNION ALL SELECT 3
+    ) AS numbers1 ON CHAR_LENGTH(exclusions) - CHAR_LENGTH(REPLACE(exclusions, ',', '')) >= n - 1 
+    JOIN (
+        SELECT 1 AS m
+        UNION ALL SELECT 2
+        UNION ALL SELECT 3
+    ) AS numbers2 ON CHAR_LENGTH(extras) - CHAR_LENGTH(REPLACE(extras, ',','')) >= m-1
+    JOIN pizza_names ON pizza_names.pizza_id = s.pizza_id
+    GROUP BY ranks, 
+      order_id, 
+      pizza_name,
+      exclusions,
+      extras,
+      topping_id,
+      topping_name
+) AS topping_table;
+
+
+
+    WITH s AS
+    (
+        SELECT *, ROW_NUMBER() OVER () AS ranks
+        FROM customer_orders_temp
+    )
+    SELECT ranks, order_id, pizza_names.pizza_name, 
+    CASE
+        WHEN exclusions != 'null'
+        AND topping_id IN (
+          SELECT
+            SUBSTRING_INDEX(SUBSTRING_INDEX(exclusions, ',', n), ',', -1) AS exclusions
+        ) THEN topping_name END AS exclusions,
+     CASE   
+        WHEN extras != 'null'
+        AND topping_id IN (
+          SELECT
+        SUBSTRING_INDEX(SUBSTRING_INDEX(extras, ',',m),',',-1) AS extras
+        ) THEN topping_name END AS extras
+    FROM pizza_toppings, s
+    JOIN (
+        SELECT 1 AS n
+        UNION ALL SELECT 2
+        UNION ALL SELECT 3
+        -- Add more UNION ALL statements for each possible value in the exclusions column
+    ) AS numbers1 ON CHAR_LENGTH(exclusions) - CHAR_LENGTH(REPLACE(exclusions, ',', '')) >= n - 1 
+    JOIN (
+        SELECT 1 AS m
+        UNION ALL SELECT 2
+        UNION ALL SELECT 3
+    ) AS numbers2 ON CHAR_LENGTH(extras) - CHAR_LENGTH(REPLACE(extras, ',','')) >= m-1
+    JOIN pizza_names ON pizza_names.pizza_id = s.pizza_id
+    GROUP BY ranks, 
+      order_id, 
+      pizza_names.pizza_name,
+      exclusions,
+      n,m,
+      extras,
+      topping_id,
+      topping_name;
+
+
+
+DROP TABLE order_items_temp;
+---This CASE WHEN can work in the scope of this current data only
+WITH s AS
+(
+SELECT c.order_id, n.pizza_name, a.topping_name AS exclusions_1, b.topping_name AS exclusions_2, d.topping_name AS extras_1, e.topping_name AS extras_2
+FROM extras_exclusions c
+JOIN pizza_names n ON n.pizza_id = c.pizza_id
+LEFT JOIN pizza_toppings a ON a.topping_id = c.exclusions_1 
+LEFT JOIN pizza_toppings b ON b.topping_id = c.exclusions_2
+LEFT JOIN pizza_toppings d ON d.topping_id = c.extras_1
+LEFT JOIN pizza_toppings e ON e.topping_id = c.extras_2
+)
+SELECT order_id,
+CASE 
+		WHEN COALESCE(exclusions_1, exclusions_2, extras_1, extras_2) IS NULL THEN pizza_name
+		WHEN exclusions_2 IS NULL AND extras_1 IS NULL and  extras_2 IS NULL
+			THEN CONCAT(pizza_name, ' - Exclude ', exclusions_1)
+		WHEN exclusions_1 IS NULL AND exclusions_2 IS NULL and  extras_2 IS NULL
+			THEN CONCAT(pizza_name, ' - Extra ', extras_1)
+		WHEN COALESCE(exclusions_1, exclusions_2, extras_1, extras_2) IS NOT NULL 
+			THEN CONCAT_WS("", pizza_name, ' - Extra ', extras_1, ', ', extras_2,
+					   ' - Exclude ', exclusions_1,', ', exclusions_2)
+		END AS order_item
+FROM s;
+
+--Generate an alphabetically ordered comma separated ingredient list for each pizza order from the customer_orders table and add a 2x in front of any relevant ingredients
+-- For example: "Meat Lovers: 2xBacon, Beef, ... , Salami"
+
+CREATE TEMPORARY TABLE pizza_recipes_temp
+SELECT r1.pizza_id, GROUP_CONCAT(t.topping_name) AS ingredients
+FROM pizza_recipes1 r1
+JOIN pizza_toppings t ON r1.toppings = t.topping_id
+GROUP BY r1.pizza_id;
+
+---Notice that order number 7 has an extra that doesn't belong to veggie pizza.
+WITH a AS
+(
+SELECT o.order_id, o.pizza_name, r.ingredients, o.exclusions_1, o.exclusions_2, o.extras_1, o.extras_2
+FROM order_items_temp o
+JOIN pizza_recipes_temp r ON r.pizza_id = o.pizza_id
+)
+SELECT order_id, 
+CASE
+    WHEN LOCATE(extras_1, ingredients) = 0 AND LOCATE(extras_2, ingredients) =0
+      THEN CONCAT(pizza_name, ': ', extras_1, ', ', extras_2, ',', ingredients)
+    WHEN LOCATE(extras_1, ingredients) = 0 
+      THEN CONCAT(pizza_name, ': ', extras_1, ', ',ingredients)
+    WHEN LOCATE(extras_1, ingredients) > 0 AND LOCATE(extras_2, ingredients) > 0
+      THEN CONCAT(pizza_name, ': ', REPLACE(REPLACE(ingredients, extras_2, CONCAT('2x',extras_2)), extras_1, CONCAT('2x',extras_1)))
+    WHEN LOCATE(extras_1, ingredients) > 0 
+      THEN CONCAT(pizza_name, ': ', REPLACE(ingredients, extras_1, CONCAT('2x ', extras_1)))
+    ELSE ingredients
+      END AS order_ingredients
+FROM a;
+
+--Use CASE WHEN IN CONCAT
+
+SELECT order_id, CONCAT(pizza_name, ' : ' ,
+	CASE 
+    WHEN LOCATE(extras_1, ingredients) > 0 AND LOCATE(extras_2, ingredients) > 0 
+			THEN REPLACE(REPLACE(ingredients, extras_2, CONCAT('2x',extras_2)), extras_1, CONCAT('2x',extras_1))
+		WHEN LOCATE (extras_1,ingredients) > 0
+      THEN REPLACE(ingredients, extras_1, CONCAT('2x ', extras_1))
+        ELSE ingredients
+        END)
+FROM a;
+
+
+
+DROP TABLE pizza_recipes_temp;
+SELECT * FROM pizza_recipes_temp;
+SELECT * FROM order_items_temp;
+SELECT * FROM extras_exclusions;
+SELECT * FROM pizza_recipes1;
 -- What is the total quantity of each ingredient used in all delivered pizzas sorted by most frequent first?
+SELECT * FROM pizza_recipes1;
+
+
+
+CREATE TEMPORARY TABLE tmp_extras1
+SELECT tmp_extras.order_id, extras FROM tmp_extras 
+JOIN runner_orders_temp r ON r.order_id = tmp_extras.order_id
+WHERE r.pickup_time IS NOT NULL;
+
+CREATE TEMPORARY TABLE tmp_exclusions1
+SELECT tmp_exclusions.order_id, exclusions FROM tmp_exclusions
+JOIN runner_orders_temp r ON r.order_id = tmp_exclusions.order_id
+WHERE r.pickup_time IS NOT NULL;
+
+SELECT * FROM tmp_extras1;
+DROP TABLE tmp_extras1;
+SELECT * FROM tmp_exclusions1;
+
+--Answer:
+SELECT a.topping_name,
+CASE WHEN b.extras_count > 0 AND c.exclusions_count >0 THEN a.ingredient_count + b.extras_count - c.exclusions_count
+     WHEN b.extras_count > 0 THEN a.ingredient_count + b.extras_count
+     WHEN c.exclusions_count > 0 THEN a.ingredient_count - c.exclusions_count
+ELSE a.ingredient_count
+END AS ingredient_amount 
+FROM
+(SELECT t.topping_name, COUNT(r1.toppings) AS ingredient_count
+FROM customer_orders_temp c
+JOIN runner_orders_temp r ON r.order_id = c.order_id
+JOIN pizza_recipes1 r1 ON r1.pizza_id = c.pizza_id
+JOIN pizza_toppings t ON t.topping_id = r1.toppings
+WHERE r.pickup_time IS NOT NULL
+GROUP BY t.topping_name) AS a
+LEFT JOIN
+(SELECT t.topping_name, COUNT(t.topping_id) AS extras_count
+FROM tmp_extras1
+JOIN pizza_toppings t ON t.topping_id = tmp_extras1.extras
+GROUP BY t.topping_name) AS b
+ON a.topping_name = b.topping_name
+LEFT JOIN
+(SELECT t.topping_name, COUNT(t.topping_id) AS exclusions_count
+FROM tmp_exclusions1
+JOIN pizza_toppings t ON t.topping_id = tmp_exclusions1.exclusions
+GROUP BY t.topping_name) AS c
+ON a.topping_name = c.topping_name
+ORDER BY ingredient_amount DESC
+;
+
+SELECT a.topping_name,
+a.ingredient_count
+    + COALESCE(b.extras_count, 0) 
+    - COALESCE(c.exclusions_count, 0) AS ingredient_amount 
+FROM
+(SELECT t.topping_name, COUNT(r1.toppings) AS ingredient_count
+FROM customer_orders_temp c
+JOIN runner_orders_temp r ON r.order_id = c.order_id
+JOIN pizza_recipes1 r1 ON r1.pizza_id = c.pizza_id
+JOIN pizza_toppings t ON t.topping_id = r1.toppings
+WHERE r.pickup_time IS NOT NULL
+GROUP BY t.topping_name) AS a
+LEFT JOIN
+(SELECT t.topping_name, COUNT(t.topping_id) AS extras_count
+FROM tmp_extras1
+JOIN pizza_toppings t ON t.topping_id = tmp_extras1.extras
+GROUP BY t.topping_name) AS b
+ON a.topping_name = b.topping_name
+LEFT JOIN
+(SELECT t.topping_name, COUNT(t.topping_id) AS exclusions_count
+FROM tmp_exclusions1
+JOIN pizza_toppings t ON t.topping_id = tmp_exclusions1.exclusions
+GROUP BY t.topping_name) AS c
+ON a.topping_name = c.topping_name
+ORDER BY ingredient_amount DESC
+;
+
+-- D. Pricing and Ratings
+-- If a Meat Lovers pizza costs $12 and Vegetarian costs $10 and there were no charges for changes - how much money has Pizza Runner made so far if there are no delivery fees?
+SELECT
+   SUM(CASE
+      WHEN pizza_id = 1 THEN 12
+      WHEN pizza_id = 2 THEN 10
+      END) AS Total_sales
+  FROM customer_orders_temp c
+  JOIN runner_orders_temp r ON c.order_id = r.order_id
+  WHERE r.pickup_time IS NOT NULL;
+
+-- What if there was an additional $1 charge for any pizza extras?
+-- Add cheese is $1 extra
+
+--This soultion should work in postqreSQL but not in MySQL
+WITH Sales AS
+(
+SELECT
+   SUM(CASE
+      WHEN pizza_id = 1 THEN 12
+      WHEN pizza_id = 2 THEN 10
+      END) AS Total_sales
+  FROM customer_orders_temp c
+  JOIN runner_orders_temp r1 ON c.order_id = r1.order_id
+  WHERE r1.pickup_time IS NOT NULL
+)
+SELECT COUNT(*) AS Extra_surcharge
+  FROM tmp_extras tmpe
+  JOIN runner_orders_temp r1 ON tmpe.order_id = r1.order_id
+  WHERE r1.pickup_time IS NOT NULL
+)
+SELECT SUM(Total_sales + Extra_surcharge)
+FROM Sales, Extras;
+
+
+--Update extras_exclusions table first because exras_1 column' values are not NULL
+SELECT * FROM extras_exclusions;
+UPDATE extras_exclusions
+SET extras_1 = NULL
+WHERE extras_1 = ''; 
+
+--Answer--
+SELECT * FROM tmp_extras;
+SELECT ee.order_id, extras_1, extras_2,
+   CASE
+      WHEN pizza_id = 1 AND extras_1 IS NOT NULL AND extras_2 IS NOT NULL THEN 12+2
+      WHEN pizza_id = 1 AND extras_1 IS NOT NULL THEN 12 + 1
+      WHEN pizza_id = 1 AND extras_1 IS NULL AND extras_2 IS NULL then 12
+      WHEN pizza_id = 2 AND extras_1 IS NULL AND extras_2 IS NULL THEN 10 
+      WHEN pizza_id = 2 AND extras_1 IS NOT NULL AND extras_2 IS NOT NULL THEN 10 + 2
+      WHEN pizza_id = 2 AND extras_1 IS NOT NULL THEN 10 + 1
+      END AS Total_sales_surcharge
+  FROM extras_exclusions ee
+  JOIN runner_orders_temp r ON ee.order_id = r.order_id
+  WHERE r.pickup_time IS NOT NULL;
+
+-- The Pizza Runner team now wants to add an additional ratings system that allows customers to rate their runner, how would you design an additional table for this new dataset - generate a schema for this new table and insert your own data for ratings for each successful customer order between 1 to 5.
+-- Using your newly generated table - can you join all of the information together to form a table which has the following information for successful deliveries?
+-- customer_id
+-- order_id
+-- runner_id
+-- rating
+-- order_time
+-- pickup_time
+-- Time between order and pickup
+-- Delivery duration
+-- Average speed
+-- Total number of pizzas
+-- If a Meat Lovers pizza was $12 and Vegetarian $10 fixed prices with no cost for extras and each runner is paid $0.30 per kilometre traveled - how much money does Pizza Runner have left over after these deliveries?
+
+
+
+
