@@ -890,7 +890,26 @@ SELECT ee.order_id, extras_1, extras_2,
   WHERE r.pickup_time IS NOT NULL;
 
 -- The Pizza Runner team now wants to add an additional ratings system that allows customers to rate their runner, how would you design an additional table for this new dataset - generate a schema for this new table and insert your own data for ratings for each successful customer order between 1 to 5.
--- Using your newly generated table - can you join all of the information together to form a table which has the following information for successful deliveries?
+DROP TABLE IF EXISTS ratings;
+CREATE TABLE ratings
+(order_id INT,
+runner_id INT,
+customer_id INT,
+rating INT
+);
+
+INSERT INTO ratings (order_id, runner_id, customer_id, rating)
+VALUES 
+('1', '1', '101', '5'),
+('2', '1', '101', '5'),
+('3', '1', '102', '4'),
+('4', '2', '103', '5'),
+('5', '3', '104', '5'),
+('7', '2', '105', '5'),
+('8', '2', '102', '4'),
+('10', '1', '104', '5');
+
+--Using your newly generated table - can you join all of the information together to form a table which has the following information for successful deliveries?
 -- customer_id
 -- order_id
 -- runner_id
@@ -901,8 +920,48 @@ SELECT ee.order_id, extras_1, extras_2,
 -- Delivery duration
 -- Average speed
 -- Total number of pizzas
+
+SELECT ra.customer_id, ra.order_id, r.runner_id, ra.rating, c.order_time, r.pickup_time, TIMESTAMPDIFF(MINUTE,(c.order_time), (r.pickup_time)) AS order_pickup_time, r.duration, ROUND(AVG(r.distances/((r.duration)/60))), COUNT(ra.order_id)
+FROM ratings ra
+JOIN customer_orders_temp c ON c.order_id = ra.order_id
+JOIN runner_orders_temp r ON r.order_id = c.order_id
+GROUP BY ra.customer_id, ra.order_id, r.runner_id, ra.rating, c.order_time, r.pickup_time, order_pickup_time, r.duration
+ORDER BY ra.customer_id;
+
+
 -- If a Meat Lovers pizza was $12 and Vegetarian $10 fixed prices with no cost for extras and each runner is paid $0.30 per kilometre traveled - how much money does Pizza Runner have left over after these deliveries?
 
+WITH profit_margin AS
+(
+SELECT c.order_id,
+   SUM(CASE
+      WHEN pizza_name = 'MeatLovers' THEN 12
+      WHEN pizza_name = 'Vegetarian' THEN 10
+      END) AS profit,
+    ROUND(0.3*r.distances,1) AS delivery_cost
+FROM customer_orders_temp c
+JOIN runner_orders_temp r ON r.order_id = c.order_id
+JOIN pizza_names n ON n.pizza_id = c.pizza_id
+WHERE r.pickup_time IS NOT NULL
+GROUP BY c.order_id, delivery_cost
+)
+SELECT SUM(profit)-SUM(delivery_cost)
+FROM profit_margin;
+
+---E. Bonus Questions
+--If Danny wants to expand his range of pizzas - how would this impact the existing data design?
+--Write an INSERT statement to demonstrate what would happen if a new Supreme pizza with all the toppings was added to the Pizza Runner menu?
+INSERT INTO pizza_names (pizza_id, pizza_name)
+VALUES (3,'PizzaSupreme');
+
+INSERT INTO pizza_recipes (pizza_id,toppings)
+VALUES (3,'1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12');
+
+
+DELETE FROM pizza_recipes
+WHERE pizza_id = 3;
+
+SELECT * FROM pizza_recipes;
 
 
 
