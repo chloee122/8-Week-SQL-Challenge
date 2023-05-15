@@ -1,9 +1,181 @@
+----A. Customer Journey
+---Based off the 8 sample customers provided in the sample from the subscriptions table, 
+--write a brief description about each customer's onboarding journey.
+
+Try to keep it as short as possible - you may also want to run some sort of join to make your explanations a bit easier!
+  SELECT s.customer_id, s.plan_id, p.plan_name, s.start_date
+  FROM subscriptions s
+  JOIN plans p ON p.plan_id = s.plan_id
+  WHERE customer_id IN (1,2,11,13,15,16,18,19);
+
+--   B. Data Analysis Questions
+-- How many customers has Foodie-Fi ever had?
+SELECT COUNT (DISTINCT customer_id)
+FROM subscriptions;
+
+-- What is the monthly distribution of trial plan start_date values for our dataset - use the start of the month as the group by value
+
+SELECT DATE_FORMAT(s.start_date, '%Y-%m-01') AS start_month, DATE_FORMAT(s.start_date, '%M') as months, COUNT(*)
+FROM subscriptions s
+JOIN plans p ON s.plan_id = p.plan_id
+WHERE p.plan_name = 'trial'
+GROUP BY start_month, months
+ORDER BY start_month, months;
+
+
+--- What plan start_date values occur after the year 2020 for our dataset? 
+--Show the breakdown by count of events for each plan_name
+SELECT p.plan_id, p.plan_name, COUNT(*) AS events_count
+FROM plans p
+LEFT JOIN subscriptions s ON p.plan_id = s.plan_id
+WHERE YEAR(s.start_date) > 2020
+GROUP BY p.plan_id,p.plan_name;
+
+
+-- What is the customer count and percentage of customers who have churned rounded to 1 decimal place?
+SELECT COUNT(*) AS churned_customer_counts, ROUND((COUNT(*)/(SELECT COUNT(DISTINCT customer_id) FROM subscriptions))*100,1) as churn_percentage
+FROM subscriptions s
+JOIN plans p ON p.plan_id = s.plan_id
+WHERE p.plan_name = 'churn';
+
+--- How many customers have churned straight after their initial free trial 
+-- what percentage is this rounded to the nearest whole number?
+CREATE VIEW trial_end AS
+SELECT s.customer_id, DATE_ADD(s.start_date, INTERVAL 7 DAY) AS end_date
+FROM subscriptions s
+JOIN plans p ON p.plan_id = s.plan_id
+WHERE p.plan_name = 'trial';
+
+SELECT COUNT(*) AS churned_customer_counts, ROUND((COUNT(*)/(SELECT COUNT(DISTINCT customer_id) FROM subscriptions))*100,1) AS churn_percentage
+FROM subscriptions s
+JOIN plans p ON s.plan_id = p.plan_id
+JOIN trial_end ON trial_end.customer_id = s.customer_id AND trial_end.end_date = s.start_date
+WHERE p.plan_name = 'churn';
+
+--Use window function
+With add_row AS
+(
+SELECT customer_id, plan_id, ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY plan_id) AS plan_number
+FROM subscriptions
+)
+SELECT COUNT(customer_id) AS customer_count, ROUND((COUNT(*)/(SELECT COUNT(DISTINCT customer_id) FROM subscriptions))*100,1) AS churn_percentage
+FROM add_row
+WHERE plan_id =4 AND plan_number = 2;
+
+
+-- What is the number and percentage of customer plans after their initial free trial?
+WITH add_row AS
+(
+SELECT s.customer_id, s.plan_id, p.plan_name, ROW_NUMBER() OVER (PARTITION BY s.customer_id ORDER BY s.plan_id) AS plan_number
+FROM subscriptions s
+JOIN plans p ON p.plan_id = s.plan_id
+)
+SELECT plan_id, plan_name, COUNT(*) AS plan_count, ROUND((COUNT(*)/(SELECT COUNT(DISTINCT customer_id) FROM subscriptions))*100,1) AS plan_percentage
+FROM add_row
+WHERE plan_id IN (1,2,3) AND plan_number = 2
+GROUP BY plan_id, plan_name;
+
+--OR USE LEAD() window function
+WITH add_lead AS
+(
+SELECT s.customer_id, p.plan_name, s.plan_id, LEAD(s.plan_id,1) OVER(PARTITION BY s.customer_id ORDER BY s.plan_id) AS next_plan
+FROM subscriptions s
+JOIN plans p ON p.plan_id = s.plan_id
+)
+SELECT next_plan, COUNT(*) AS plan_count, ROUND((COUNT(*)/(SELECT COUNT(DISTINCT customer_id) FROM subscriptions))*100,1) AS plan_percentage
+FROM add_lead
+WHERE next_plan IS NOT NULL AND plan_id=0
+GROUP BY next_plan;
+
+-- What is the customer count and percentage breakdown of all 5 plan_name values at 2020-12-31?
+WITH rank_added AS
+(
+SELECT plan_id, RANK () OVER (PARTITION BY customer_id ORDER BY start_date DESC) AS ranks
+FROM subscriptions 
+WHERE start_date <='2020-12-31'
+)
+SELECT p.plan_name, COUNT(*) AS plan_count, ROUND((COUNT(*)/(SELECT COUNT(DISTINCT customer_id) FROM subscriptions))*100,1) AS plan_percentage
+FROM rank_added ra
+JOIN plans p ON p.plan_id = ra.plan_id
+WHERE ranks =1
+GROUP BY p.plan_name;
+
+-- How many customers have upgraded to an annual plan in 2020?
+SELECT COUNT(*) AS annual_plan_count
+FROM subscriptions s
+JOIN plans p ON s.plan_id = p.plan_id
+WHERE p.plan_name='pro annual' AND YEAR(start_date)=2020;
+
+-- How many days on average does it take for a customer to an annual plan from the day they join Foodie-Fi?
+SELECT ROUND(AVG(DATEDIFF(a.start_date,b.start_date))) AS avg_days_to_updrade
+FROM subscriptions a
+JOIN 
+(SELECT customer_id, start_date
+FROM subscriptions
+WHERE plan_id = 0) AS b ON a.customer_id = b.customer_id
+WHERE plan_id = 3;
+
+-- Can you further breakdown this average value into 30 day periods (i.e. 0-30 days, 31-60 days etc)
+--The question requirement is to group data into different ranges, which can be solved quickly by using the WIDTH_BUCKET function.
+-- This function is not supported in MySQL, but I found a workaround to get the similar result created with WITDH_BUCKET.
+
+CREATE VIEW trial_annual_days AS
+(
+SELECT DATEDIFF(a.start_date, b.start_date) AS days_to_upgrade
+FROM subscriptions a
+JOIN (SELECT customer_id, start_date FROM subscriptions WHERE plan_id = 0) AS b
+ON a.customer_id = b.customer_id 
+WHERE plan_id = 3   
+);
+
+CREATE TEMPORARY TABLE bucket_list(
+    id INT AUTO_INCREMENT,
+    startno INT,
+    endno INT,
+    primary key (id)
+);
+
+INSERT INTO bucket_list (startno, endno)
+VALUES 
+(0, 30),
+(31, 60),
+(61, 90),
+(91, 120),
+(121, 150),
+(151, 180),
+(181, 210),
+(211, 240),
+(241, 270),
+(271, 300),
+(301, 330),
+(331, 360),
+(361, 390);
+
+SELECT CONCAT(b.startno,' - ', b.endno, ' days') AS day_range,
+       SUM(CASE WHEN t.days_to_upgrade IS NULL THEN 0 ELSE 1 END) AS customers
+FROM bucket_list b
+LEFT JOIN trial_annual_days t ON t.days_to_upgrade BETWEEN b.startno AND b.endno
+GROUP BY day_range;
+
+
+-- How many customers downgraded from a pro monthly to a basic monthly plan in 2020?
+WITH add_row AS 
+(
+SELECT customer_id, plan_id, LEAD(plan_id) OVER(PARTITION BY customer_id ORDER BY plan_id) AS next_plan, start_date
+FROM subscriptions
+)
+SELECT COUNT(*) AS downgraded_plan_count
+FROM add_row
+WHERE plan_id = 2 AND next_plan = 1 AND MONTH(start_date) = 2020 ;
+
+--Answer: There wasn't any customer downgraded their plan from pro monthly to basic monthly in 2020
 C. Challenge Payment Question
 The Foodie-Fi team wants you to create a new payments table for the year 2020 that includes amounts paid by each customer in the subscriptions table with the following requirements:
 monthly payments always occur on the same day of month as the original start_date of any monthly paid plan
 upgrades from basic to monthly or pro plans are reduced by the current paid amount in that month and start immediately
 upgrades from pro monthly to pro annual are paid at the end of the current billing period and also starts at the end of the month period
 once a customer churns they will no longer make payments
+*This is a solution in Postgre*
 set search_path to foodie_fi;
 	 
 CREATE TEMPORARY TABLE payment_date AS 
