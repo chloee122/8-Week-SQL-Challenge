@@ -1,0 +1,36 @@
+C. Challenge Payment Question
+The Foodie-Fi team wants you to create a new payments table for the year 2020 that includes amounts paid by each customer in the subscriptions table with the following requirements:
+monthly payments always occur on the same day of month as the original start_date of any monthly paid plan
+upgrades from basic to monthly or pro plans are reduced by the current paid amount in that month and start immediately
+upgrades from pro monthly to pro annual are paid at the end of the current billing period and also starts at the end of the month period
+once a customer churns they will no longer make payments
+set search_path to foodie_fi;
+	 
+CREATE TEMPORARY TABLE payment_date AS 
+(SELECT customer_id,
+ 		plan_id,
+ 		generate_series(start_date,
+                        CASE WHEN plan_id = 3 THEN start_date
+                        	 WHEN plan_id = 4 THEN NULL
+                             WHEN LEAD(start_date) OVER(PARTITION BY customer_id ORDER BY start_date) IS NOT NULL 
+                             THEN LEAD(start_date) OVER(PARTITION BY customer_id ORDER BY start_date)
+                             ELSE '2021-01-01' END, '1 month'+'1 second':: interval) :: date as payment_date
+FROM subscriptions
+WHERE start_date <'2021-01-01' AND plan_id != 0);
+
+CREATE TEMPORARY TABLE payment AS
+(SELECT pd.customer_id,
+ 		pd.plan_id,
+ 		plan_name,
+ 		pd.payment_date,
+ 		CASE WHEN pd.plan_id != 1 AND payment_date - LAG(payment_date) OVER(PARTITION BY customer_id ORDER BY payment_date) < 30 
+ 			 THEN price - LAG(price) OVER(PARTITION BY customer_id ORDER BY payment_date)
+         ELSE p.price
+         END AS amount,
+ RANK() OVER (PARTITION BY customer_id ORDER BY payment_date) AS payment_order
+FROM payment_date as pd
+JOIN plans as p ON p.plan_id = pd.plan_id
+);
+ 
+SELECT * FROM payment
+WHERE customer_id IN (1,2,13,15,16,18,19);
