@@ -206,3 +206,29 @@ JOIN plans as p ON p.plan_id = pd.plan_id
  
 SELECT * FROM payment
 WHERE customer_id IN (1,2,13,15,16,18,19);
+
+D. Outside The Box Questions
+The following are open ended questions which might be asked during a technical interview for this case study - there are no right or wrong answers, but answers that make sense from both a technical and a business perspective make an amazing impression!
+How would you calculate the rate of growth for Foodie-Fi?
+Answer: In order to calculate the rate of growth for Foodie-Fi, the difference of sales between the beginning the ending of year 2020 will be divided by the initial sales at the beginnng of year 2020.
+What key metrics would you recommend Foodie-Fi management to track over time to assess performance of their overall business?
+Answer: Key metrics to access Foodie-Fi's business performance are
+---sales
+---Number of new subscribers
+---Number of subscribers who cancel subscriptions.
+What are some key customer journeys or experiences that you would analyse further to improve customer retention?
+Key customer journeys or experiences to analyse:
+---Number of customers who cancel after trial
+---Number of customers who cancel their subscription
+---Number of customers who downgraded their subscription
+If the Foodie-Fi team were to create an exit survey shown to customers who wish to cancel their subscription, what questions would you include in the survey?
+---What are the reasons for canceling their subscription?
+---what can be done better to improve their experience?
+What business levers could the Foodie-Fi team use to reduce the customer churn rate? How would you validate the effectiveness of your ideas?
+There are two group of customers who churn, those are customers who churned immediately after trial and customers who churned after subscribed a plan/plans
+--For those who churned immediately after trials:
+Increasing the trial time or offering extended trial time when they proceed to cancel their trial. Increasing the trial time might give customers more time to explore Foodie-Fi programs and to consider subscribing.
+In order to see whether this offer help decreasing the churn rate, we can compare the churn rate of those who have 1-week trial vs those who was offered with longer trial time.
+--For those who canceled their subscription plan:
+Offer a discounted price when they decided to re-subscribing
+In order to validate the effectiveness of this offer. We can analyse the rate of customers who re-subcribe.
