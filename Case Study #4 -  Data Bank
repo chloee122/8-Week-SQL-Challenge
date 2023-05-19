@@ -1,0 +1,134 @@
+--   A. Customer Nodes Exploration
+-- How many unique nodes are there on the Data Bank system?
+SELECT DISTINCT node_id
+FROM customer_nodes
+ORDER BY node_id;
+
+--Answer: There are 4 unique nodes
+
+-- What is the number of nodes per region?
+SELECT region_name, COUNT(node_id)
+FROM customer_nodes node
+JOIN regions re ON re.region_id = node.region_id 
+GROUP BY re.region_name;
+
+--Answer: Run query
+
+-- How many customers are allocated to each region?
+SELECT region_name, COUNT(DISTINCT customer_id)
+FROM customer_nodes node
+JOIN regions re ON re.region_id = node.region_id
+GROUP BY region_name;
+
+--Answer: Run query
+
+-- How many days on average are customers reallocated to a different node?
+WITH diff_days As (
+  SELECT customer_id,
+         region_id,
+         node_id,
+         start_date,
+         end_date,
+         CASE 
+             WHEN node_id != LEAD(node_id) OVER (PARTITION BY customer_id ORDER BY start_date) 
+             THEN DATEDIFF(LEAD(start_date) OVER (PARTITION BY customer_id ORDER BY start_date), start_date)
+             ELSE NULL
+             END AS days_diff
+  FROM customer_nodes
+)
+SELECT ROUND(AVG(days_diff),1)
+FROM diff_days;
+
+---Logics: The question is about average number of days that customers are reallocated to a DIFFERENT node.
+---Therefore, LAG or LEAD are used to filter out cases where customers' node doesn't change.
+--Self-notes: To calculate the difference in days of two date in MySQL, use DATEDIFF. Using subtraction (-) will give an incorrect result.  
+--Answer: There are 15.6 days on average that customers are reallocated to a different node. 
+
+-- What is the median, 80th and 95th percentile for this same reallocation days metric for each region?
+--This method does not give 100% correct answer because it give the only gives the results based on the requested position of numbers.
+--In fact, median or percentile are calculated by multiplying the percentile and total amount of number. If the result is odd, it is round up and that is the position of that median/percentile
+--Meanwhile, if the result is even, the median/percentile is the mean of that number position and its next values, which can not be applied in the solution below.
+--In Postgre, percentile_cont function can be used to solve this easily
+--First, reallocation days for each region, order and number rows
+DROP TEMPORARY TABLE IF EXISTS diff;
+CREATE TEMPORARY TABLE diff AS
+SELECT customer_id,
+       region_id,
+       node_id,
+       start_date,
+       end_date,
+       CASE WHEN node_id != LEAD(node_id) OVER (PARTITION BY customer_id ORDER BY start_date)
+            THEN ROUND(DATEDIFF(LEAD(start_date) OVER (PARTITION BY customer_id ORDER BY start_date), start_date),1)
+            ELSE NULL
+            END AS days_diff
+FROM customer_nodes
+ORDER BY days_diff
+;
+
+DROP TEMPORARY TABLE diff;
+SELECT * FROM diff;
+
+
+WITH calculation AS
+(
+SELECT region_id, days_diff,
+       ROW_NUMBER() OVER(PARTITION BY region_id) AS number_position,
+       COUNT(*) OVER(PARTITION BY region_id) AS total_count
+FROM diff
+WHERE days_diff IS NOT NULL
+ORDER BY days_diff ASC
+)
+SELECT * FROM calculation cal
+JOIN regions re ON re.region_id = cal.region_id
+WHERE number_position = ROUND((total_count)/2)
+AND number_position = ROUND(total_count*0.8)
+ORDER BY region_name;
+
+--Median
+WITH calculation AS
+(
+SELECT region_id, days_diff,
+       ROW_NUMBER() OVER(PARTITION BY region_id) AS number_position,
+       COUNT(*) OVER(PARTITION BY region_id) AS total_count
+FROM diff
+WHERE days_diff IS NOT NULL
+ORDER BY days_diff ASC
+)
+SELECT region_name AS Region, days_diff AS Median
+FROM calculation cal
+JOIN regions re ON re.region_id = cal.region_id
+WHERE number_position = ROUND(total_count/2)
+ORDER BY region_name;
+
+--80th percentile
+WITH calculation AS
+(
+SELECT region_id, days_diff,
+       ROW_NUMBER() OVER(PARTITION BY region_id) AS number_position,
+       COUNT(*) OVER(PARTITION BY region_id) AS total_count
+FROM diff
+WHERE days_diff IS NOT NULL
+ORDER BY days_diff ASC
+)
+SELECT region_name AS Region, days_diff AS Eightieth_percentile
+FROM calculation cal
+JOIN regions re ON re.region_id = cal.region_id
+WHERE number_position = ROUND(total_count*0.8)
+ORDER BY region_name;
+
+--95th percentile
+WITH calculation AS
+(
+SELECT region_id, days_diff,
+       ROW_NUMBER() OVER(PARTITION BY region_id) AS number_position,
+       COUNT(*) OVER(PARTITION BY region_id) AS total_count
+FROM diff
+WHERE days_diff IS NOT NULL
+ORDER BY days_diff ASC
+)
+SELECT region_name AS Region, days_diff AS Ninetieth_percentile
+FROM calculation cal
+JOIN regions re ON re.region_id = cal.region_id
+WHERE number_position = ROUND(total_count*0.95)
+ORDER BY region_name;
+
