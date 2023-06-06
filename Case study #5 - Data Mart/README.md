@@ -5,7 +5,8 @@
 ## 📚 Table of Contents
 - [Business Task](#business-task)
 - [Entity Relationship Diagram](#entity-relationship-diagram)
-- [Question and Solution](#question-and-solution)
+-  Question and Solution
+    - [A. Data Cleansing](https://github.com/chloee122/8-Week-SQL-Challenge/blob/main/Case%20study%20%235%20-%20Data%20Mart/A.%20Data%20Cleansing.md)
 
 Please note that all the information regarding the case study has been sourced from the following link: [here](https://8weeksqlchallenge.com/case-study-5/). 
 
