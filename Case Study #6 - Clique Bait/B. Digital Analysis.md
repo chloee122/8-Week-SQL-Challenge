@@ -18,7 +18,8 @@ FROM users;
 |---------|
 |500|
 
-* There are 500 users
+**Answer:**
+There are 500 users
 
 ---------------------------
 
@@ -91,6 +92,7 @@ To count the percentage of purchase events, I count the `visit_id` that have a p
 | 49.9 |
 
 -------------------
+
 **Question 6:**
 What is the percentage of visits which view the checkout page but do not have a purchase event?
 
