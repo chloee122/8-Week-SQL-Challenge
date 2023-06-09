@@ -150,8 +150,9 @@ WHERE view_rank = 1 OR cart_adds_rank =1 OR purchase_rank =1;
 | Oyster    | 1568            | 943                     | 726                 |
 | Lobster   | 1547            | 968                     | 754                 |
 
-**Oyster and Lobster are products with the most number of views, cart adds, and purchases among all products**
-**Even Oyster has more views, however, Lobster has more cart adds and purchases**
+**Answer:**
+Oyster and Lobster are products with the most number of views, cart adds, and purchases among all products
+Even Oyster has more views, however, Lobster has more cart adds and purchases
 
 ------------------------------
 
@@ -176,7 +177,8 @@ WHERE abandon_rank =1;
 | Russian Caviar | 249                       |
 
 
-**Russian Caviar is the most likely abandoned product**
+**Answer:**
+Russian Caviar is the most likely abandoned product
 
 -----------------------------------
 
