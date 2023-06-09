@@ -1,3 +1,4 @@
+**Requirement**
 Using a single SQL query - create a new output table which has the following details:
 
 * How many times was each product viewed?
@@ -59,6 +60,7 @@ SELECT * FROM product_analysis;
 
 
 ----------
+**Requirement**
 Additionally, create another table which further aggregates the data for the above points but this time for each product category instead of individual products.
 
 Use your 2 new output tables - answer the following questions:
