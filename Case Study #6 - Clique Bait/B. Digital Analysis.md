@@ -107,10 +107,70 @@ SELECT
   ROUND(100 * (1-(SUM(purchase)::numeric/SUM(checkout))),1) AS percentage
 FROM event_cte
 ```
-I use `case` expression in `event_cte` to find out visits that view the checkout page and visits that have a purchase event. With the information from the created cte, we can find the requested percentage.
+I use `CASE WHEN` statement in `event_cte` to find out visits that view the checkout page and visits that have a purchase event. With the information from the created cte, we can find the requested percentage.
 
 **Results:**
 | percentage |
 | ----- |
 | 15.5 |
+
+--------------------
+**Question 7**
+What are the top 3 pages by number of views?
+
+**Query :**
+
+```sql
+SELECT page_name, COUNT(e.event_type) AS view_count
+FROM events e
+JOIN event_identifier i ON e.event_type = i.event_type
+JOIN page_hierarchy p ON p.page_id = e.page_id
+WHERE event_name = 'Page View'
+GROUP BY page_name
+ORDER BY view_count DESC
+LIMIT 3;
+```
+
+I first joined table `events` with tables `event_identifier` and `page_hierarchy` to find the `view_count` of each `page_name`. The results set are ordered by the `view_count` in descending order and limit to 3 to find three most viewed page.
+
+**Results:**
+
+| page_name    | view_count |
+| ------------ | ------------ |
+| All Products | 3174         |
+| Checkout     | 2103         |
+| Home Page    | 1782         |
+
+-----------------------------
+
+**Question 8:**
+What is the number of views and cart adds for each product category?
+
+```sql
+SELECT product_category,
+  SUM(CASE WHEN event_name='Page View' THEN 1 ELSE 0 END) AS number_of_views,
+  SUM(CASE WHEN event_name='Add to Cart' THEN 1 ELSE 0 END) AS numer_of_cart_adds
+FROM events e
+JOIN event_identifier i ON e.event_type = i.event_type
+JOIN page_hierarchy p ON p.page_id = e.page_id
+WHERE product_category IS NOT NULL
+GROUP BY product_category
+ORDER BY number_of_views DESC;
+```
+I use `CASE WHEN` statement to find out the `number_of_views` and `number_of_cart_adds` of each `product_category`. If the `event_name` is 'Page View` then we count it as 1, else we count it as 0. Then we can get the sum result group by `producategory`. We do it similiarly to find the number of cart adds, too.
+There are product with NULL values so we use WHERE statement to avoid those results.
+
+**Results:**
+| product_category | number_of_views | number_of_cart_adds |
+| ---------------- | ------------ | ---------------- |
+| Shellfish        | 6204         | 3792             |
+| Fish             | 4633         | 2789             |
+| Luxury           | 3032         | 1870             |
+
+-------------------------------------------
+
+**Question 9:**
+What are the top 3 products by purchases?
+
+
 
