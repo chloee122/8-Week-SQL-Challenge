@@ -1,4 +1,4 @@
-**Requirement**
+**Requirement:**
 
 Using a single SQL query - create a new output table which has the following details:
 
@@ -62,7 +62,7 @@ SELECT * FROM product_analysis;
 
 ----------
 
-**Requirement**
+**Requirement:**
 
 Additionally, create another table which further aggregates the data for the above points but this time for each product category instead of individual products.
 
