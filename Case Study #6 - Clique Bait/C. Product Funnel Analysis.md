@@ -1,3 +1,6 @@
+**3. Product Funnel Analysis**
+----------------------
+
 **Requirement:**
 
 Using a single SQL query - create a new output table which has the following details:
