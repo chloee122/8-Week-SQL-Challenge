@@ -115,4 +115,60 @@ SELECT * FROM category_analysis;
 | Luxury           | 3032            | 1870                    | 466                       | 1404                |
 | Shellfish        | 6204            | 3792                    | 894                       | 2898                |
 
-----------------------------
+--------------------------------------------
+
+Use your 2 new output tables - answer the following questions:
+
+**Question 1**
+Which product had the most views, cart adds and purchases?
+
+**Query**
+```sql
+WITH rank_cte AS
+(
+SELECT *, 
+	   RANK() OVER(ORDER BY product_views DESC) AS view_rank,
+	   RANK() OVER(ORDER BY cart_adds DESC) AS cart_adds_rank,
+	   RANK() OVER(ORDER BY purchased DESC) AS purchase_rank
+FROM product_analysis
+)
+SELECT page_name, product_views, cart_adds, purchased
+FROM rank_cte
+WHERE view_rank = 1 OR cart_adds_rank =1 OR purchase_rank =1;
+```
+**Results**
+| page_name | product_views   | cart_adds               |  purchased          |
+| -------- | --------------- | ----------------------- | ------------------- |
+| Oyster    | 1568            | 943                     | 726                 |
+| Lobster   | 1547            | 968                     | 754                 |
+
+**Oyster and Lobster are products with the most number of views, cart adds, and purchases among all products**
+**Even Oyster has more views, however, Lobster has more cart adds and purchases**
+
+------------------------------
+
+**Question 2:**
+Which product was most likely to be abandoned?
+
+**Query**
+```sql
+WITH rank_cte AS
+(
+SELECT page_name, abandoned, RANK() OVER(ORDER BY abandoned DESC) AS abandon_rank
+FROM product_analysis
+)
+SELECT page_name, abandoned
+FROM rank_cte
+WHERE abandon_rank =1;
+```
+
+**Results**
+| page_name      | abandoned                 |
+| -------------- | ------------------------- |
+| Russian Caviar | 249                       |
+
+
+**Russian Caviar is the most likely abandoned product**
+
+-----------------------------------
+
