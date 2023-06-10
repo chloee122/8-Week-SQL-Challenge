@@ -182,3 +182,31 @@ Russian Caviar is the most likely abandoned product
 
 -----------------------------------
 
+**Question 3:**
+Which product had the highest view to purchase percentage?
+
+**Query**
+```sql
+WITH rank_cte AS
+(
+SELECT page_name, purchase_view_percent, rank() OVER(ORDER BY purchase_view_percent DESC) AS rank
+FROM product_analysis,
+	LATERAL
+	(SELECT ROUND(purchased/product_views::numeric*100, 1) AS purchase_view_percent) pvp
+)
+SELECT page_name, purchase_view_percent
+FROM rank_cte
+WHERE rank = 1;
+```
+
+In this query, I used `LATERAL` to enable a correlated subquery in the FROM clause, making the query shorter.
+
+**Results:**
+
+| page_name | purchase_view_percent       |
+| --------- | --------------------------- |
+| Lobster   | 48.7                        |
+
+**Answer:**
+Lobster is the product that had the highest view to purchase percentage.
+
