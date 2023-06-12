@@ -9,7 +9,7 @@
      * [A.Enterprise Relationship Diagram]
      * [B. Digtial Analysis](https://github.com/chloee122/8-Week-SQL-Challenge/blob/main/Case%20Study%20%236%20-%20Clique%20Bait/B.%20Digital%20Analysis.md)
      * [C.Product Funnel Analysis](https://github.com/chloee122/8-Week-SQL-Challenge/blob/main/Case%20Study%20%236%20-%20Clique%20Bait/C.%20Product%20Funnel%20Analysis.md)
-     * [D. Campaign Analysis] (https://github.com/chloee122/8-Week-SQL-Challenge/blob/main/Case%20Study%20%236%20-%20Clique%20Bait/D.%20Campaign%20Analysis.md)
+     * [D. Campaign Analysis](https://github.com/chloee122/8-Week-SQL-Challenge/blob/main/Case%20Study%20%236%20-%20Clique%20Bait/D.%20Campaign%20Analysis.md)
 
 Please note that all the information regarding the case study has been sourced from the following link: [here](https://8weeksqlchallenge.com/case-study-6/). 
 
