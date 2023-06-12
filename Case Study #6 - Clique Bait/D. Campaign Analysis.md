@@ -22,7 +22,8 @@ SELECT DISTINCT visit_id, user_id, MIN(event_time),
 				campaign_name,
 				SUM(CASE WHEN event_type = 4 THEN 1 ELSE 0 END) AS ad_impression,
 				SUM(CASE WHEN event_type = 5 THEN 1 ELSE 0 END) AS ad_click,
-			    STRING_AGG(CASE WHEN event_type = 2 THEN page_name ELSE NULL END, ', ' ORDER BY sequence_number) AS cart_products
+			        STRING_AGG(CASE WHEN event_type = 2 THEN page_name ELSE NULL END, ', ' ORDER BY sequence_number) AS cart_products
+INTO campaign_analysis			    
 FROM events e
 JOIN users u ON e.cookie_id = u.cookie_id
 LEFT JOIN campaign_identifier c ON e.event_time BETWEEN c.start_date AND c.end_date
