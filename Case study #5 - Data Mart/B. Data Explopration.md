@@ -271,7 +271,7 @@ The rerults are different.
 | 2020          | Shopify  | 174.87              | 179.03                |
 | 2020          | Retail   | 40.64               | 36.56                 |
 
- **Answer**
+ **Answer:**
 It is more accurate to find the yearly average transaction size by dividing the total of yearly sales by the total yearly amount of transactions which is `avg_transaction_group` in the above query.
 If we use `avg_transaction` column to find the average, we are calculating the average of weekly average transaction size for each year. This will lead to incorrect results.
 
