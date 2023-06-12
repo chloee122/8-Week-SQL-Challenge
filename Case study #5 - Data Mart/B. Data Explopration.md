@@ -12,6 +12,7 @@ FROM clean_weekly_sales;
 ```
 
 I used `TO_CHAR` to get the Day format of the week_date, then I used `DISTINCT` to get the unique results.
+
 **Results:**
 
 | Day     |
@@ -41,8 +42,8 @@ WHERE c.week_number IS NULL;
 ```
 There are 52 weeks in a year so I generated a series from 1 to 52. 
 To find the missing week_number, I use `RIGHT JOIN` to join `clean_weekly_sales` and `week_number_cte`.
-Any week_number value of `clean_weekly_sales` that doesn't match with `missing_week_number`'s value will return `NULL`. 
-Hence, we can use WHERE condition to filter NULL values and find the `missing_week_number`.
+Any week_number value of `clean_weekly_sales` that doesn't match with week_number value of `missing_week_number`  will return `NULL`. 
+Hence, we can use a WHERE clause to filter NULL values and find the `missing_week_number`.
 
 
 **Results:**
@@ -257,7 +258,7 @@ ORDER BY calendar_year, platform;
 ```
 
 In the query, I used two ways to compute the average transaction size for each year for Retail vs Shopify. 
-`avg_transaction_row` is the average of average transaction of each row in the data set, while `avg_transaction_column` is calculated by dividing the `sum` of `sales` column by the `sum` of `transaction` column.
+`avg_transaction_row` is the average of average transaction of each row (each week_date) in the data set, grouped by `platform` and `calendar_year`, while `avg_transaction_group` is calculated by dividing the `sum` of `sales` column by the `sum` of `transaction` column grouped by `platform` and `calendar_year`.
 The rerults are different.
 
 **Results:**
