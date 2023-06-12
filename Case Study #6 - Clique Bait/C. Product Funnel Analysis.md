@@ -240,7 +240,7 @@ FROM product_analysis
 ```
 
 **Results:**
-| avg_cnvrsn_rate |
+| avg_cart_to_purchase |
 | ----- |
 | 75.93 |
 
