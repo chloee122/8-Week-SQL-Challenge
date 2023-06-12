@@ -67,3 +67,15 @@ Here is the partial result
 | 5       | b45feb   | 2020-02-01T07:47:45.025Z | 1          | 0          | 0        | Half Off - Treat Your Shellf(ish) | 0          | 0     |                                                                                       |
 | 5       | f61ed7   | 2020-02-01T06:30:39.766Z | 8          | 2          | 1        | Half Off - Treat Your Shellf(ish) | 0          | 0     | Lobster, Crab                                                                         |
 | 5       | fa70cb   | 2020-02-26T11:12:20.361Z | 1          | 0          | 0        | Half Off - Treat Your Shellf(ish) | 0          | 0     |                                                                                       |
+
+-------------------------
+[IN PROGRESS]
+
+Use the subsequent dataset to generate at least 5 insights for the Clique Bait team - bonus: prepare a single A4 infographic that the team can use for their management reporting sessions, be sure to emphasise the most important points from your findings.
+
+Some ideas you might want to investigate further include:
+
+- Identifying users who have received impressions during each campaign period and comparing each metric with other users who did not have an impression event
+- Does clicking on an impression lead to higher purchase rates?
+- What is the uplift in purchase rate when comparing users who click on a campaign impression versus users who do not receive an impression? What if we compare them with users who just an impression but do not click?
+- What metrics can you use to quantify the success or failure of each campaign compared to each other?
