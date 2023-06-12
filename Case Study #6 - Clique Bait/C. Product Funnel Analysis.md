@@ -210,3 +210,41 @@ In this query, I used `LATERAL` to enable a correlated subquery in the FROM clau
 **Answer:**
 Lobster is the product that had the highest view to purchase percentage.
 
+----------------------------
+**Question 4:**
+What is the average conversion rate from view to cart add?
+
+**Query:**
+```sql
+SELECT ROUND(SUM(cart_adds)/SUM(product_views)::numeric*100,2) AS avg_view_to_cart
+FROM product_analysis;
+```
+**Results:**
+| avg_view_to_cart |
+| ----- |
+| 60.93 |
+
+**Answer:**
+The average conversion rate from view to cart add is 60.93%
+
+-------------------------
+
+**Question 5:**
+What is the average conversion rate from cart add to purchase?
+
+
+**Query:**
+```sql
+SELECT ROUND(SUM(purchased)/SUM(cart_adds)::numeric*100,2) AS avg_cart_to_purchase
+FROM product_analysis
+```
+
+**Results:**
+| avg_cnvrsn_rate |
+| ----- |
+| 75.93 |
+
+**Answer:**
+The average conversion rate from cart add to purchase is 75.93%
+
+
