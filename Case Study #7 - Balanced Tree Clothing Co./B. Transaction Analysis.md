@@ -63,7 +63,7 @@ FROM revenue_cte;
 In CTE `revenue_cte` I calculated the revenue after discount of each transaction.
 To find the remaining sales after discount, I used 100 - discount. If the discount amount is 17%, then the remaining sales is equal to 100 - 17.
 
-**Results:*
+**Results:**
 
 | percentile_25 | percentile_50 | percentile_75 |
 | ------------- | ------------- | ------------- |
