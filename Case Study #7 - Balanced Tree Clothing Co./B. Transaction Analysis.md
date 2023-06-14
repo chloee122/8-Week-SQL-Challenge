@@ -120,7 +120,7 @@ In the main query, I summed the unique transactions, calculated the number of me
 
 -----------------
 
-**Question 6**
+**Question 6:**
 What is the average revenue for member transactions and non-member transactions?
 
 **Query**
