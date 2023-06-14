@@ -115,7 +115,7 @@ SELECT ROUND(SUM(members)/SUM(total_transaction)*100,1) AS member_percentage,
        ROUND(SUM(non_members)/SUM(total_transaction)*100,1) AS non_member_percentage
 FROM member_cte;
 ```
-In `member_cte`, I found the unique transaction and count them. I also use `CASE WHEN` to mark values made by members and non_members
+In `member_cte`, I found the unique transactions and count them. I also use `CASE WHEN` to mark values made by members and non_members
 In the main query, I summed the unique transactions, calculated the number of members and non-members, and found the percentage of transactions made by the member and the non-members.
 
 -----------------
@@ -136,6 +136,8 @@ GROUP BY txn_id
 SELECT ROUND(AVG(member_revenue),1) AS avg_member_revenue, ROUND(AVG(non_member_revenue),1) AS avg_non_member_revenue
 FROM revenue_cte;
 ```
+In `revenue_cte`, I calculated the revenue per each member transaction and non-member transaction by using `CASE WHEN` and `SUM`
+In the main query, I found the average revenue for member transactions and non-member transactions.
 
 **Results:**
 
