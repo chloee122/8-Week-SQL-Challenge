@@ -7,6 +7,9 @@
 - [Entity Relationship Diagram](#entity-relationship-diagram)
 -  Question and Solution
     - [A. Data Cleansing](https://github.com/chloee122/8-Week-SQL-Challenge/blob/main/Case%20study%20%235%20-%20Data%20Mart/A.%20Data%20Cleansing.md)
+    - [B. Data Exploration](https://github.com/chloee122/8-Week-SQL-Challenge/blob/main/Case%20study%20%235%20-%20Data%20Mart/B.%20Data%20Explopration.md)
+    - [C. Before and After Analysis](https://github.com/chloee122/8-Week-SQL-Challenge/blob/main/Case%20study%20%235%20-%20Data%20Mart/C.%20Before%20and%20After%20Analysis.md)
+    - [D. Bonus Question](https://github.com/chloee122/8-Week-SQL-Challenge/blob/main/Case%20study%20%235%20-%20Data%20Mart/D.%20Bonus%20Question.md)
 
 Please note that all the information regarding the case study has been sourced from the following link: [here](https://8weeksqlchallenge.com/case-study-5/). 
 
