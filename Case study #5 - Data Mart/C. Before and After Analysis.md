@@ -11,7 +11,7 @@ Using this analysis approach - answer the following questions:
 
 ---------------
 
-1.What is the total sales for the 4 weeks before and after 2020-06-15? What is the growth or reduction rate in actual values and percentage of sales?
+1. What is the total sales for the 4 weeks before and after 2020-06-15? What is the growth or reduction rate in actual values and percentage of sales?
 
 **Query:**
 
@@ -42,7 +42,7 @@ Total sales for 4 weeks after 2020-06-15 decreased 1.15% compared to 4 week sale
 
 -----------------------
 
-2.What about the entire 12 weeks before and after?
+2. What about the entire 12 weeks before and after?
 
 **Query:**
 ```sql
@@ -69,7 +69,7 @@ Total sales for 12 weeks after 2020-06-15 decreased -2.14% compared to 12 week s
 
 ------------------------
 
-3.How do the sale metrics for these 2 periods before and after compare with the previous years in 2018 and 2019?
+3. How do the sale metrics for these 2 periods before and after compare with the previous years in 2018 and 2019?
 
 **Query**
 First, I found the week_number of this date to make it more easy in querying.
