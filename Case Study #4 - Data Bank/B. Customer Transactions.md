@@ -74,5 +74,21 @@ JOIN other o ON o.customer_id = de.customer_id AND o.txn_date = de.txn_date
 GROUP BY de.txn_date;
 ```
 
+I created two CTEs to determine the count of deposit, purchase, and withdrawal for each customer categorized by month. The first CTE `deposit` is to determine customers who have more than 1 deposit transaction in a single month. The second CTE `other` is to find out customers who have either 1 purchase or 1 withdrawal in a single month.
 
+In the main query, I joined the two CTEs and use COUNT(*) to find the number of customers who make more than 1 deposit and either 1 purchase or 1 withdrawal in a single month.
+
+**Results:**
+
+| months                   | count |
+| ------------------------ | ---------------- |
+| 2020-01-01               | 168              |
+| 2020-02-01               | 181              |
+| 2020-03-01               | 192              |
+| 2020-04-01               | 70               |
+
+------------------
+
+**QUESTION 4:**
+What is the closing balance for each customer at the end of the month?
 
